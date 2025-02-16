@@ -9,11 +9,12 @@ import uvicorn
 TOKEN = "7709450866:AAHymCobKs5PuN01OPB4bWMVVKTSBXW6Pl8"
 WEBHOOK_URL = "https://renewed-kingfisher-dealshub-1d13ebf7.koyeb.app/webhook"
 
+# Initialize Bot and Dispatcher
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 
-# ✅ Corrected Health Check Endpoint
+# ✅ Corrected Health Check Endpoint for Koyeb
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -30,10 +31,12 @@ async def telegram_webhook(request: Request):
 async def echo(message: types.Message):
     await message.answer(f"You said: {message.text}")
 
-# ✅ Setup Webhook Before Running the App
-async def main():
+# ✅ Corrected async handling for Uvicorn
+async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(on_startup())
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
