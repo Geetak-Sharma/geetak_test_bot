@@ -1,32 +1,36 @@
 import os
 import asyncio
-import uvicorn
 from aiogram import Bot, Dispatcher, types
+from aiogram.types import Update
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from fastapi import FastAPI
-import threading
+import uvicorn
 
 TOKEN = os.getenv("TELEGRAM_API_KEY")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Set this to your Koyeb app URL
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# FastAPI app for health checks
 app = FastAPI()
 
-@app.get("/health")
-async def health_check():
-    return {"status": "OK"}
+# Health check endpoint
+@app.get("/")
+async def health():
+    return {"status": "ok"}
 
-async def start_bot():
-    await dp.start_polling(bot)
+@app.post("/webhook")
+async def telegram_webhook(update: dict):
+    telegram_update = Update(**update)
+    await dp.process_update(telegram_update)
 
-def run_health_check():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@dp.message()
+async def echo(message: types.Message):
+    await message.answer(f"You said: {message.text}")
+
+async def main():
+    await bot.set_webhook(WEBHOOK_URL + "/webhook")
+    dp.run_app(app)
 
 if __name__ == "__main__":
-    # Start FastAPI server in a separate thread
-    health_thread = threading.Thread(target=run_health_check, daemon=True)
-    health_thread.start()
-
-    # Run the bot
-    asyncio.run(start_bot())
+    uvicorn.run(app, host="0.0.0.0", port=8000)
