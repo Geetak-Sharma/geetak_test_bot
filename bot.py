@@ -13,28 +13,27 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 app = FastAPI()
 
-# Health check endpoint
-@app.get("/")
+# ✅ Corrected Health Check Endpoint
+@app.get("/health")
 async def health():
     return {"status": "ok"}
 
-# Telegram Webhook Endpoint
+# ✅ Telegram Webhook Endpoint
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
     update = Update(**data)
     await dp.process_update(update)
 
-# Bot Message Handler
+# ✅ Bot Message Handler
 @dp.message()
 async def echo(message: types.Message):
     await message.answer(f"You said: {message.text}")
 
-# Setup Webhook
+# ✅ Setup Webhook Before Running the App
 async def main():
     await bot.set_webhook(WEBHOOK_URL)
-
-# Run Server
-if __name__ == "__main__":
-    asyncio.run(main())  # Set webhook before starting server
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+if __name__ == "__main__":
+    asyncio.run(main())
