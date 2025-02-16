@@ -1,42 +1,42 @@
-import os
-import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Update
 from fastapi import FastAPI, Request
-import uvicorn
+import asyncio
+import os
 
-# Set Bot Token & Webhook URL
-TOKEN = "7709450866:AAHymCobKs5PuN01OPB4bWMVVKTSBXW6Pl8"
-WEBHOOK_URL = "https://renewed-kingfisher-dealshub-1d13ebf7.koyeb.app/webhook"
+# Load your bot token here
+BOT_TOKEN = "7709450866:AAHymCobKs5PuN01OPB4bWMVVKTSBXW6Pl8"
 
-# Initialize Bot and Dispatcher
-bot = Bot(token=TOKEN)
+# Initialize bot and dispatcher
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+
+# Initialize FastAPI
 app = FastAPI()
 
-# ✅ Corrected Health Check Endpoint for Koyeb
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# ✅ Telegram Webhook Endpoint
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
-    data = await request.json()
-    update = Update(**data)
-    await dp.process_update(update)
+    try:
+        update = Update(**await request.json())
+        await dp._process_update(update)  # Correcting method name for aiogram v3
+    except Exception as e:
+        logger.error(f"Error processing update: {e}")
+    return {"status": "ok"}
 
-# ✅ Bot Message Handler
 @dp.message()
-async def echo(message: types.Message):
-    await message.answer(f"You said: {message.text}")
+async def handle_message(message: types.Message):
+    try:
+        await message.answer("Hello! I'm your bot.")
+    except Exception as e:
+        logger.error(f"Failed to send message: {e}")
 
-# ✅ Corrected async handling for Uvicorn
-async def on_startup():
-    await bot.set_webhook(WEBHOOK_URL)
+async def main():
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(on_startup())
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
+    asyncio.run(main())
